@@ -33,40 +33,42 @@ fi
 # Load the credentials
 . ./${configFile}
 
+# This is commented out, as it will be given over a DB dump
+# BEGIN
 # Check either planet or extract selected
-if [ -z "${planetUrl}" -a -z "${geofabrikUrl}" ]; then
-    # Report and fail
-    echo "#	Configuration error, please specify either a full planet or a Geofabrik extract"
-    exit 1
-fi
-
+# if [ -z "${planetUrl}" -a -z "${geofabrikUrl}" ]; then
+#     # Report and fail
+#     echo "#	Configuration error, please specify either a full planet or a Geofabrik extract"
+#     exit 1
+# fi
+#
 # Check either planet or extract selected but not both
-if [ -n "${planetUrl}" -a -n "${geofabrikUrl}" ]; then
-    # Report and fail
-    echo "#	Configuration error, please specify either a full planet or a Geofabrik extract, not both"
-    echo "#	Planet: ${planetUrl}"
-    echo "#	Extract: ${geofabrikUrl}"
-    exit 1
-fi
-
+# if [ -n "${planetUrl}" -a -n "${geofabrikUrl}" ]; then
+#     # Report and fail
+#     echo "#	Configuration error, please specify either a full planet or a Geofabrik extract, not both"
+#     echo "#	Planet: ${planetUrl}"
+#     echo "#	Extract: ${geofabrikUrl}"
+#     exit 1
+# fi
+#
 # Download
-if [ -n "${planetUrl}" ]; then
-
-    # Options for a full planet
-    osmdatafilename=planet-latest.osm.pbf
-    osmdatafolder=wholePlanet/
-    osmdataurl=${planetUrl}${osmdatafilename}
-
-else
-    # Options for a Geofabrik Extract
-    osmdatafilename=${osmdatacountry}-latest.osm.pbf
-    osmdataurl=${geofabrikUrl}${osmdatafolder}${osmdatafilename}
-    osmupdates=${geofabrikUrl}${osmdatafolder}${osmdatacountry}-updates
-fi
-
-# Where the downloaded data is stored
-osmdatapath=data/${osmdatafolder}${osmdatafilename}
-
+# if [ -n "${planetUrl}" ]; then
+# 
+#     # Options for a full planet
+#     osmdatafilename=planet-latest.osm.pbf
+#     osmdatafolder=wholePlanet/
+#     osmdataurl=${planetUrl}${osmdatafilename}
+# 
+# else
+#     # Options for a Geofabrik Extract
+#     osmdatafilename=${osmdatacountry}-latest.osm.pbf
+#     osmdataurl=${geofabrikUrl}${osmdatafolder}${osmdatafilename}
+#     osmupdates=${geofabrikUrl}${osmdatafolder}${osmdatacountry}-updates
+# fi
+# 
+# # Where the downloaded data is stored
+# osmdatapath=data/${osmdatafolder}${osmdatafilename}
+# END
 
 ### MAIN PROGRAM ###
 
@@ -75,8 +77,8 @@ osmdatapath=data/${osmdatafolder}${osmdatafilename}
 setupLogFile=$(readlink -e $(dirname $0))/setupLog.txt
 touch ${setupLogFile}
 chmod a+w ${setupLogFile}
-echo "#\tImport and index OSM data in progress, follow log file with:\n#\ttail -f ${setupLogFile}"
-echo "#\tNominatim installation $(date)" >> ${setupLogFile}
+# echo "#\tImport and index OSM data in progress, follow log file with:\n#\ttail -f ${setupLogFile}"
+# echo "#\tNominatim installation $(date)" >> ${setupLogFile}
 
 # Ensure there is a nominatim user account
 if id -u ${username} >/dev/null 2>&1; then
@@ -183,16 +185,18 @@ sudo -u ${username} ./configure >> ${setupLogFile}
 sudo -u ${username} make >> ${setupLogFile}
 
 
-# Get Wikipedia data which helps with name importance hinting
-echo "\n#\tWikipedia data" >> ${setupLogFile}
-# These large files are optional, and if present take a long time to process by ./utils/setup.php later in the script.
-# Download them if they are not already present - the available ones date from early 2012.
-if test ! -r data/wikipedia_article.sql.bin; then
-    sudo -u ${username} wget --output-document=data/wikipedia_article.sql.bin http://www.nominatim.org/data/wikipedia_article.sql.bin
-fi
-if test ! -r data/wikipedia_redirect.sql.bin; then
-    sudo -u ${username} wget --output-document=data/wikipedia_redirect.sql.bin http://www.nominatim.org/data/wikipedia_redirect.sql.bin
-fi
+# BEGIN
+# # Get Wikipedia data which helps with name importance hinting
+# echo "\n#\tWikipedia data" >> ${setupLogFile}
+# # These large files are optional, and if present take a long time to process by ./utils/setup.php later in the script.
+# # Download them if they are not already present - the available ones date from early 2012.
+# if test ! -r data/wikipedia_article.sql.bin; then
+#     sudo -u ${username} wget --output-document=data/wikipedia_article.sql.bin http://www.nominatim.org/data/wikipedia_article.sql.bin
+# fi
+# if test ! -r data/wikipedia_redirect.sql.bin; then
+#     sudo -u ${username} wget --output-document=data/wikipedia_redirect.sql.bin http://www.nominatim.org/data/wikipedia_redirect.sql.bin
+# fi
+# END
 
 # http://stackoverflow.com/questions/8546759/how-to-check-if-a-postgres-user-exists
 # Creating the importer account in Postgres
@@ -210,30 +214,31 @@ chmod +x "/home/${username}"
 chmod +x "/home/${username}/Nominatim"
 chmod +x "/home/${username}/Nominatim/module"
 
+# BEGIN
 # Ensure download folder exists
-sudo -u ${username} mkdir -p data/${osmdatafolder}
-
+# sudo -u ${username} mkdir -p data/${osmdatafolder}
+#
 # Download OSM data if not already present
-if test ! -r ${osmdatapath}; then
-    echo "\n#\tDownload OSM data" >> ${setupLogFile}
-    sudo -u ${username} wget --output-document=${osmdatapath}.md5 ${osmdataurl}.md5
-    sudo -u ${username} wget --output-document=${osmdatapath} ${osmdataurl}
-fi
-
-#	Check the md5 matches
-if [ "$(md5sum ${osmdatapath} | awk '{print $1;}')" != "$(cat ${osmdatapath}.md5 | awk '{print $1;}')" ]; then
-    echo "#\tThe md5 checksum for osmdatapath: ${osmdatapath} does not match, stopping."
-    exit 1
-    echo "\n#\tDownloaded OSM data integrity verified by md5 check." >> ${setupLogFile}
-fi
-
-
+# if test ! -r ${osmdatapath}; then
+#     echo "\n#\tDownload OSM data" >> ${setupLogFile}
+#     sudo -u ${username} wget --output-document=${osmdatapath}.md5 ${osmdataurl}.md5
+#     sudo -u ${username} wget --output-document=${osmdatapath} ${osmdataurl}
+# fi
+# 
+# #	Check the md5 matches
+# if [ "$(md5sum ${osmdatapath} | awk '{print $1;}')" != "$(cat ${osmdatapath}.md5 | awk '{print $1;}')" ]; then
+#     echo "#\tThe md5 checksum for osmdatapath: ${osmdatapath} does not match, stopping."
+#     exit 1
+#     echo "\n#\tDownloaded OSM data integrity verified by md5 check." >> ${setupLogFile}
+# fi
+#
+#
 #idempotent
 # Cannot make idempotent safely from here because that would require editing nominatim's setup scripts.
 # Remove any pre-existing nominatim database
-echo "\n#\tRemove any pre-existing nominatim database" >> ${setupLogFile}
-sudo -u postgres psql postgres -c "DROP DATABASE IF EXISTS nominatim"
-
+# echo "\n#\tRemove any pre-existing nominatim database" >> ${setupLogFile}
+# sudo -u postgres psql postgres -c "DROP DATABASE IF EXISTS nominatim"
+# 
 # Add local Nominatim settings
 localNominatimSettings=/home/${username}/Nominatim/settings/local.php
 
@@ -245,42 +250,44 @@ cat > ${localNominatimSettings} << EOF
    @define('CONST_Website_BaseURL', 'http://${websiteurl}/');
 EOF
 
-# By default, Nominatim is configured to update using the global minutely diffs
-if [ -z "${planetUrl}" ]; then
-
-    # When using GeoFabrik extracts append these lines to set up the update process
-    cat >> ${localNominatimSettings} << EOF
-   // Setting up the update process
-   @define('CONST_Replication_Url', '${osmupdates}');
-   @define('CONST_Replication_MaxInterval', '86400');     // Process each update separately, osmosis cannot merge multiple updates
-   @define('CONST_Replication_Update_Interval', '86400');  // How often upstream publishes diffs
-   @define('CONST_Replication_Recheck_Interval', '900');   // How long to sleep if no update found yet
-EOF
-fi
+# # By default, Nominatim is configured to update using the global minutely diffs
+# if [ -z "${planetUrl}" ]; then
+# 
+#     # When using GeoFabrik extracts append these lines to set up the update process
+#     cat >> ${localNominatimSettings} << EOF
+#    // Setting up the update process
+#    @define('CONST_Replication_Url', '${osmupdates}');
+#    @define('CONST_Replication_MaxInterval', '86400');     // Process each update separately, osmosis cannot merge multiple updates
+#    @define('CONST_Replication_Update_Interval', '86400');  // How often upstream publishes diffs
+#    @define('CONST_Replication_Recheck_Interval', '900');   // How long to sleep if no update found yet
+# EOF
+# fi
 
 # Change settings file to Nominatim ownership
 chown ${username}:${username} ${localNominatimSettings}
 
 # Import and index main OSM data
 eval cd /home/${username}/Nominatim/
-echo "#\tStarting import and index OSM data $(date)" >> ${setupLogFile}
-# Experimentally trying with two threads here
-sudo -u ${username} ./utils/setup.php ${osm2pgsqlcache} --osm-file /home/${username}/Nominatim/${osmdatapath} --all --threads 2 >> ${setupLogFile}
-# Note: if that step gets interrupted for some reason it can be resumed using:
-# (Threads argument is optional, it'll default to one less than number of available cpus.)
-# If the reported rank is 26 or higher, you can also safely add --index-noanalyse.
-# sudo -u ${username} ./utils/setup.php --index --index-noanalyse --create-search-indices --threads 2
-echo "#\tDone Import and index OSM data $(date)" >> ${setupLogFile}
-
-# Add special phrases
-echo "#\tStarting special phrases $(date)" >> ${setupLogFile}
-sudo -u ${username} ./utils/specialphrases.php --countries > specialphrases_countries.sql >> ${setupLogFile}
-sudo -u ${username} psql -d nominatim -f specialphrases_countries.sql >> ${setupLogFile}
-sudo -u ${username} rm -f specialphrases_countries.sql
-sudo -u ${username} ./utils/specialphrases.php --wiki-import > specialphrases.sql >> ${setupLogFile}
-sudo -u ${username} psql -d nominatim -f specialphrases.sql >> ${setupLogFile}
-sudo -u ${username} rm -f specialphrases.sql
-echo "#\tDone special phrases $(date)" >> ${setupLogFile}
+# BEGIN
+# echo "#\tStarting import and index OSM data $(date)" >> ${setupLogFile}
+# # Experimentally trying with two threads here
+# sudo -u ${username} ./utils/setup.php ${osm2pgsqlcache} --osm-file /home/${username}/Nominatim/${osmdatapath} --all --threads 2 >> ${setupLogFile}
+# # Note: if that step gets interrupted for some reason it can be resumed using:
+# # (Threads argument is optional, it'll default to one less than number of available cpus.)
+# # If the reported rank is 26 or higher, you can also safely add --index-noanalyse.
+# # sudo -u ${username} ./utils/setup.php --index --index-noanalyse --create-search-indices --threads 2
+# echo "#\tDone Import and index OSM data $(date)" >> ${setupLogFile}
+# 
+# # Add special phrases
+# echo "#\tStarting special phrases $(date)" >> ${setupLogFile}
+# sudo -u ${username} ./utils/specialphrases.php --countries > specialphrases_countries.sql >> ${setupLogFile}
+# sudo -u ${username} psql -d nominatim -f specialphrases_countries.sql >> ${setupLogFile}
+# sudo -u ${username} rm -f specialphrases_countries.sql
+# sudo -u ${username} ./utils/specialphrases.php --wiki-import > specialphrases.sql >> ${setupLogFile}
+# sudo -u ${username} psql -d nominatim -f specialphrases.sql >> ${setupLogFile}
+# sudo -u ${username} rm -f specialphrases.sql
+# echo "#\tDone special phrases $(date)" >> ${setupLogFile}
+# END
 
 # Set up the website for use with Apache
 wwwNominatim=/var/www/nominatim
@@ -325,9 +332,11 @@ rm -f /home/${username}/Nominatim/settings/configuration.txt
 sudo -u ${username} ./utils/setup.php --osmosis-init
 echo "#\tDone setup $(date)" >> ${setupLogFile}
 
+# BEGIN
 # Enabling hierarchical updates
-sudo -u ${username} ./utils/setup.php --create-functions --enable-diff-updates
-echo "#\tDone enable hierarchical updates $(date)" >> ${setupLogFile}
+# sudo -u ${username} ./utils/setup.php --create-functions --enable-diff-updates
+# echo "#\tDone enable hierarchical updates $(date)" >> ${setupLogFile}
+# END
 
 # Adust PostgreSQL to do disk writes
 echo "\n#\tRetuning PostgreSQL for disk writes" >> ${setupLogFile}
@@ -337,11 +346,13 @@ ${nomInstalDir}/configPostgresqlDiskWrites.sh
 echo "\n#\tReloading PostgreSQL" >> ${setupLogFile}
 /etc/init.d/postgresql reload
 
-# Updating Nominatim
-# Using two threads for the upadate will help performance, by adding this option: --index-instances 2
-# Going much beyond two threads is not really worth it because the threads interfere with each other quite a bit.
-#  If your system is live and serving queries, keep an eye on response times at busy times, because too many update threads might interfere there, too.
-sudo -u ${username} ./utils/update.php --import-osmosis-all --no-npi
+# BEGIN
+# # Updating Nominatim
+# # Using two threads for the upadate will help performance, by adding this option: --index-instances 2
+# # Going much beyond two threads is not really worth it because the threads interfere with each other quite a bit.
+# #  If your system is live and serving queries, keep an eye on response times at busy times, because too many update threads might interfere there, too.
+# sudo -u ${username} ./utils/update.php --import-osmosis-all --no-npi
+# DONE
 
 # Done
 echo "#\tNominatim installation completed $(date)" >> ${setupLogFile}
